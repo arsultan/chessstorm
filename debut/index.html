@@ -1,0 +1,408 @@
+<meta charset="utf-8">
+<title>Дебютный справочник</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Manrope:wght@400;600;700&display=swap">
+<style>
+/* Layout: board + move path on the left, moves of the current position as a ranked table on the right; stacks on phones */
+:root{
+  --bg:#f3f1ea; --panel:#ffffff; --ink:#1f2620; --muted:#5f6857; --line:#dcd8cb;
+  --accent:#2f6b3f; --accent-ink:#ffffff; --wside:#f7f4ea; --bside:#2a302a; --bar:#86996a; --chip:#eef0e6;
+  --sq-light:#ebe2cd; --sq-dark:#86996a; --hl:rgba(242,201,76,.42); --hint:rgba(31,38,32,.28);
+  --font-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --font-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141814; --panel:#1d231d; --ink:#e8ece4; --muted:#9aa595; --line:#2f382f;
+  --accent:#6fbf7f; --accent-ink:#0f140f; --wside:#e9e6dc; --bside:#0d100d; --bar:#6c8a55; --chip:#262d26;
+  --sq-light:#cdc3a9; --sq-dark:#6c7e52; --hl:rgba(224,185,60,.45); --hint:rgba(10,14,10,.35); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141814; --panel:#1d231d; --ink:#e8ece4; --muted:#9aa595; --line:#2f382f;
+  --accent:#6fbf7f; --accent-ink:#0f140f; --wside:#e9e6dc; --bside:#0d100d; --bar:#6c8a55; --chip:#262d26;
+  --sq-light:#cdc3a9; --sq-dark:#6c7e52; --hl:rgba(224,185,60,.45); --hint:rgba(10,14,10,.35); color-scheme:dark}
+*{box-sizing:border-box}
+html,body{max-width:100%;overflow-x:hidden}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px}
+.wrap{max-width:1100px;margin:0 auto;display:grid;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px}
+h1{font-family:var(--font-display);font-weight:800;font-size:28px;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.sub{color:var(--muted);font-size:14px}
+.main{display:grid;grid-template-columns:minmax(0,500px) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:820px){.main{grid-template-columns:minmax(0,1fr)}}
+.left .board,.left .nav,.left .opening{width:100%;max-width:380px;justify-self:center}
+.nav{justify-content:center}
+.nav{flex-wrap:nowrap}
+.nav button{flex:1 1 auto;justify-content:center;white-space:nowrap;padding:8px 10px}
+.nav #bStart,.nav #bFlip{flex:0 0 auto}
+.right{align-content:start}
+.left{display:grid;gap:10px;min-width:0}
+.board{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));aspect-ratio:1;height:auto;width:100%;max-width:100%;border-radius:4px;overflow:hidden;box-shadow:0 1px 0 var(--line),0 8px 24px rgba(0,0,0,.08);user-select:none;touch-action:manipulation}
+.sq{position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;aspect-ratio:1;min-width:0;min-height:0;overflow:hidden}
+.sq.l{background:var(--sq-light)} .sq.d{background:var(--sq-dark)}
+.sq .pc{position:absolute;left:4%;top:4%;width:92%;height:92%;pointer-events:none;z-index:1}
+.sq.last{box-shadow:inset 0 0 0 999px var(--hl)}
+.sq.sel{box-shadow:inset 0 0 0 999px rgba(242,201,76,.6)}
+.sq.tgt::after{content:"";position:absolute;width:28%;height:28%;border-radius:50%;background:var(--hint);z-index:2}
+.sq.tgt.cap::after{width:86%;height:86%;background:transparent;border:5px solid var(--hint)}
+.sq.rep::before{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 3px var(--accent);z-index:2;pointer-events:none}
+.coord{position:absolute;font-size:10px;font-weight:700;z-index:1;pointer-events:none}
+.coord.f{right:3px;bottom:1px}.coord.r{left:3px;top:1px}
+.sq.l .coord{color:#6d7d53}.sq.d .coord{color:#efe7d3}
+.ghost{position:fixed;pointer-events:none;z-index:50;transform:translate(-50%,-50%);filter:drop-shadow(0 6px 8px rgba(0,0,0,.3))}
+.board{touch-action:none}
+.sq:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.ctrls{display:flex;flex-wrap:wrap;gap:8px}
+button,.btn{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+button:hover,.btn:hover{border-color:var(--accent)}
+button:focus-visible,.btn:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.45;cursor:default}
+.copybox{display:grid;gap:6px}
+#pgnTxt{font:inherit;font-size:14px;font-variant-numeric:tabular-nums;width:100%;resize:vertical;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);user-select:text;-webkit-user-select:text}
+.path{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:46px;font-variant-numeric:tabular-nums;line-height:1.9;overflow-wrap:anywhere}
+.path .mn{color:var(--muted);margin-right:2px}
+.path a{color:var(--ink);text-decoration:none;padding:1px 4px;border-radius:4px;cursor:pointer}
+.path a:hover{background:var(--chip)} .path a.cur{background:var(--accent);color:var(--accent-ink)}
+.opening{font-family:var(--font-display);font-weight:700;font-size:16px;min-height:22px}
+.opening .eco{color:var(--muted);font-weight:500;margin-right:6px}
+.right{display:grid;gap:14px;min-width:0}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:8px 12px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+select{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);max-width:100%;min-width:0;flex:1 1 220px}
+.lbl{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.moves{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.mv{min-height:44px;padding-block:8px!important;display:grid;grid-template-columns:88px 100px minmax(0,1fr);gap:12px;align-items:center;padding:10px 14px;border-top:1px solid var(--line);cursor:pointer;width:100%;text-align:left;background:none;border-left:0;border-right:0;border-bottom:0;border-radius:0}
+.mv:first-child{border-top:0}
+.mv:hover{background:var(--chip)}
+.mv .san{white-space:nowrap;font-family:var(--font-display);font-weight:800;font-size:18px;font-variant-numeric:tabular-nums}
+.mv .cnt{display:grid;gap:3px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mv .barw{height:6px;background:var(--chip);border-radius:3px;overflow:hidden}
+.mv .bar{height:100%;background:var(--bar)}
+.mv .who{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
+.chip{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--chip);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.chip .side-dot{width:8px;height:8px;margin-right:5px}
+.mv.mine .san::after{content:"по репертуару";display:block;font-family:var(--font-body);font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.02em}
+@media (max-width:520px){.mv{grid-template-columns:88px minmax(0,1fr)}.mv .who{grid-column:1/-1}}
+.empty{padding:18px 14px;color:var(--muted)}
+.reps{display:flex;flex-wrap:wrap;gap:6px}
+.reps a{font-size:13px;color:var(--ink);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:var(--panel)}
+.reps a:hover{border-color:var(--accent)}
+.side-dot{display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid var(--muted);vertical-align:-1px;margin-right:4px}
+.note{font-size:13px;color:var(--muted);max-width:65ch}
+.loading{opacity:.55}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+    <g id="pc-wk" stroke-linecap="round" stroke-linejoin="round" transform="translate(5.000000, 5.000000)" stroke="#000000"
+       stroke-width="1.5">
+        <line x1="15" y1="4.96764706" x2="15" y2="0"/>
+        <line x1="12.8571429" y1="1.76470588" x2="17.1428571" y2="1.76470588"/>
+        <path d="M17.5714286,7.5 C17.5714286,7.5 16.7142857,5.29411765 15,5.29411765 C13.2857143,5.29411765 12.4285714,7.5 12.4285714,7.5 C11.1428571,10.1470588 15,16.7647059 15,16.7647059 C15,16.7647059 18.8571429,10.1470588 17.5714286,7.5 Z" fill="#FFFFFF"/>
+        <path d="M5.57142857,27.3529412 C10.2857143,30.4411765 18.8571429,30.4411765 23.5714286,27.3529412 L23.5714286,21.1764706 C23.5714286,21.1764706 31.2857143,17.2058824 28.7142857,11.9117647 C25.2857143,6.17647059 17.1428571,8.82352941 15,15.4411765 L15,18.5294118 L15,15.4411765 C12,8.82352941 3.85714286,6.17647059 1.28571429,11.9117647 C-1.28571429,17.2058824 5.57142857,20.7352941 5.57142857,20.7352941 L5.57142857,27.3529412 Z" fill="#FFFFFF"/>
+        <path d="M5.57142857,21.1764706 C10.2857143,18.5294118 18.8571429,18.5294118 23.5714286,21.1764706"
+              fill-opacity="0" fill="#000000"/>
+        <path d="M5.57142857,24.2647059 C10.2857143,21.6176471 18.8571429,21.6176471 23.5714286,24.2647059"
+              fill-opacity="0" fill="#000000" stroke-linecap="square"/>
+        <path d="M5.57142857,27.3529412 C10.2857143,24.7058824 18.8571429,24.7058824 23.5714286,27.3529412"
+              fill-opacity="0" fill="#000000"/>
+    </g>
+    <g id="pc-wq" stroke-linecap="round" stroke-linejoin="round" transform="translate(4.000000, 5.000000)" stroke="#000000"
+       stroke-width="1.5">
+        <path d="M3.45945946,6.2 C3.45945946,7.17833299 2.68503308,7.97142857 1.72972973,7.97142857 C0.774426379,7.97142857 0,7.17833299 0,6.2 C0,5.22166701 0.774426379,4.42857143 1.72972973,4.42857143 C2.68503308,4.42857143 3.45945946,5.22166701 3.45945946,6.2 Z" fill="#FFFFFF"/>
+        <path d="M17.7297297,2.21428571 C17.7297297,3.1926187 16.9553034,3.98571429 16,3.98571429 C15.0446966,3.98571429 14.2702703,3.1926187 14.2702703,2.21428571 C14.2702703,1.23595273 15.0446966,0.442857143 16,0.442857143 C16.9553034,0.442857143 17.7297297,1.23595273 17.7297297,2.21428571 Z" fill="#FFFFFF"/>
+        <path d="M32,6.2 C32,7.17833299 31.2255736,7.97142857 30.2702703,7.97142857 C29.3149669,7.97142857 28.5405405,7.17833299 28.5405405,6.2 C28.5405405,5.22166701 29.3149669,4.42857143 30.2702703,4.42857143 C31.2255736,4.42857143 32,5.22166701 32,6.2 Z" fill="#FFFFFF"/>
+        <path d="M10.3783784,3.1 C10.3783784,4.07833299 9.603952,4.87142857 8.64864865,4.87142857 C7.6933453,4.87142857 6.91891892,4.07833299 6.91891892,3.1 C6.91891892,2.12166701 7.6933453,1.32857143 8.64864865,1.32857143 C9.603952,1.32857143 10.3783784,2.12166701 10.3783784,3.1 Z" fill="#FFFFFF"/>
+        <path d="M25.0810811,3.54285714 C25.0810811,4.52119013 24.3066547,5.31428571 23.3513514,5.31428571 C22.396048,5.31428571 21.6216216,4.52119013 21.6216216,3.54285714 C21.6216216,2.56452416 22.396048,1.77142857 23.3513514,1.77142857 C24.3066547,1.77142857 25.0810811,2.56452416 25.0810811,3.54285714 Z" fill="#FFFFFF"/>
+        <path d="M4.32432432,18.6 C11.6756757,17.2714286 22.4864865,17.2714286 27.6756757,18.6 L29.4054054,7.97142857 L23.3513514,17.7142857 L23.3513514,5.31428571 L18.5945946,17.2714286 L16,3.98571429 L13.4054054,17.2714286 L8.64864865,4.87142857 L8.64864865,17.7142857 L2.59459459,7.97142857 L4.32432432,18.6 Z" fill="#FFFFFF"/>
+        <path d="M4.32432432,18.6 C4.32432432,20.3714286 5.62162162,20.3714286 6.48648649,22.1428571 C7.35135135,23.4714286 7.35135135,23.0285714 6.91891892,25.2428571 C5.62162162,26.1285714 5.62162162,27.4571429 5.62162162,27.4571429 C4.32432432,28.7857143 6.05405405,29.6714286 6.05405405,29.6714286 C11.6756757,30.5571429 20.3243243,30.5571429 25.9459459,29.6714286 C25.9459459,29.6714286 27.2432432,28.7857143 25.9459459,27.4571429 C25.9459459,27.4571429 26.3783784,26.1285714 25.0810811,25.2428571 C24.6486486,23.0285714 24.6486486,23.4714286 25.5135135,22.1428571 C26.3783784,20.3714286 27.6756757,20.3714286 27.6756757,18.6 C20.3243243,17.2714286 11.6756757,17.2714286 4.32432432,18.6 Z" fill="#FFFFFF"/>
+        <path d="M6.48648649,22.1428571 C9.51351351,21.2571429 22.4864865,21.2571429 25.5135135,22.1428571"/>
+        <path d="M6.91891892,25.2428571 C12.1081081,24.3571429 19.8918919,24.3571429 25.0810811,25.2428571"/>
+    </g>
+    <g id="pc-wb" stroke-linecap="round" stroke-linejoin="round" transform="translate(6.000000, 5.000000)" stroke="#000000"
+       stroke-width="1.5">
+        <g fill="#FFFFFF">
+            <path d="M2.54545455,27.3529412 C5.42181818,26.4970588 11.1236364,27.7323529 14,25.5882353 C16.8763636,27.7323529 22.5781818,26.4970588 25.4545455,27.3529412 C25.4545455,27.3529412 26.8545455,27.8294118 28,29.1176471 C27.4230303,29.9735294 26.6,29.9911765 25.4545455,29.5588235 C22.5781818,28.7029412 16.8763636,29.9647059 14,28.6764706 C11.1236364,29.9647059 5.42181818,28.7029412 2.54545455,29.5588235 C1.39660606,29.9911765 0.574424242,29.9735294 0,29.1176471 C1.14884848,27.4058824 2.54545455,27.3529412 2.54545455,27.3529412 Z"/>
+            <path d="M7.63636364,23.8235294 C9.75757576,26.0294118 18.2424242,26.0294118 20.3636364,23.8235294 C20.7878788,22.5 20.3636364,22.0588235 20.3636364,22.0588235 C20.3636364,19.8529412 18.2424242,18.5294118 18.2424242,18.5294118 C22.9090909,17.2058824 23.3333333,8.38235294 14,4.85294118 C4.66666667,8.38235294 5.09090909,17.2058824 9.75757576,18.5294118 C9.75757576,18.5294118 7.63636364,19.8529412 7.63636364,22.0588235 C7.63636364,22.0588235 7.21212121,22.5 7.63636364,23.8235294 Z"/>
+            <path d="M16.1212121,2.64705882 C16.1212121,3.86533401 15.1715131,4.85294118 14,4.85294118 C12.8284869,4.85294118 11.8787879,3.86533401 11.8787879,2.64705882 C11.8787879,1.42878364 12.8284869,0.441176471 14,0.441176471 C15.1715131,0.441176471 16.1212121,1.42878364 16.1212121,2.64705882 Z"/>
+        </g>
+        <path d="M9.75757576,18.5294118 L18.2424242,18.5294118 M7.63636364,22.0588235 L20.3636364,22.0588235 M14,9.26470588 L14,13.6764706 M11.8787879,11.4705882 L16.1212121,11.4705882"/>
+    </g>
+    <g id="pc-wn" stroke-linecap="round" stroke-linejoin="round" transform="translate(6.000000, 6.000000)"
+       stroke="#000000">
+        <path d="M13.5757576,2.625 C22.4848485,3.5 27.5757576,9.625 27.1515152,28 L7.63636364,28 C7.63636364,20.125 16.1212121,22.3125 14.4242424,9.625" stroke-width="1.5" fill="#FFFFFF"/>
+        <path d="M15.2727273,9.625 C15.5951515,12.17125 10.5636364,16.07375 8.48484848,17.5 C5.93939394,19.25 6.09212121,21.2975 4.24242424,21 C3.35830303,20.1775 5.43878788,18.34 4.24242424,18.375 C3.39393939,18.375 4.40363636,19.45125 3.39393939,20.125 C2.54545455,20.125 -0.00254545455,21 -1.90580876e-06,16.625 C-1.90580876e-06,14.875 5.09090909,6.125 5.09090909,6.125 C5.09090909,6.125 6.69454545,4.4625 6.78787879,3.0625 C6.16848485,2.19275 6.36363636,1.3125 6.36363636,0.4375 C7.21212121,-0.4375 8.90909091,2.625 8.90909091,2.625 L10.6060606,2.625 C10.6060606,2.625 11.2678788,0.882 12.7272727,0 C13.5757576,0 13.5757576,2.625 13.5757576,2.625" stroke-width="1.5" fill="#FFFFFF"/>
+        <path d="M2.96969697,16.1875 C2.96969697,16.4291246 2.77975717,16.625 2.54545455,16.625 C2.31115192,16.625 2.12121212,16.4291246 2.12121212,16.1875 C2.12121212,15.9458754 2.31115192,15.75 2.54545455,15.75 C2.77975717,15.75 2.96969697,15.9458754 2.96969697,16.1875 Z" stroke-width="1.5" fill="#000000"/>
+        <path d="M7.6363543,7.4375 C7.6363543,8.16235779 7.44641868,8.74997112 7.21212121,8.74997112 C6.97782375,8.74997112 6.78788812,8.16235779 6.78788812,7.4375 C6.78788812,6.71264221 6.97782375,6.12502888 7.21212121,6.12502888 C7.44641868,6.12502888 7.6363543,6.71264221 7.6363543,7.4375 L7.6363543,7.4375 Z" stroke-width="1.499967" fill="#000000"
+              transform="translate(7.212121, 7.437500) rotate(30.000728) translate(-7.212121, -7.437500) "/>
+    </g>
+    <g id="pc-wr" stroke-linecap="round" stroke-linejoin="round" transform="translate(9.000000, 8.000000)" stroke="#000000"
+       stroke-width="1.5">
+        <polygon fill="#FFFFFF" points="0 26 22 26 22 23.4 0 23.4"/>
+        <polygon fill="#FFFFFF"
+                 points="2.44444444 23.4 2.44444444 19.9333333 19.5555556 19.9333333 19.5555556 23.4"/>
+        <polyline fill="#FFFFFF"
+                  points="1.62962963 4.33333333 1.62962963 0 4.88888889 0 4.88888889 1.73333333 8.96296296 1.73333333 8.96296296 0 13.037037 0 13.037037 1.73333333 17.1111111 1.73333333 17.1111111 0 20.3703704 0 20.3703704 4.33333333"/>
+        <polyline fill="#FFFFFF"
+                  points="20.3703704 4.33333333 17.9259259 6.93333333 4.07407407 6.93333333 1.62962963 4.33333333"/>
+        <polyline fill="#FFFFFF"
+                  points="17.9259259 6.93333333 17.9259259 17.7666667 4.07407407 17.7666667 4.07407407 6.93333333"/>
+        <polyline fill="#FFFFFF"
+                  points="17.9259259 17.7666667 19.1481481 19.9333333 2.85185185 19.9333333 4.07407407 17.7666667"/>
+        <line x1="1.62962963" y1="4.33333333" x2="20.3703704" y2="4.33333333"/>
+    </g>
+    <g id="pc-wp" transform="translate(10.000000, 9.000000)" fill="#FFFFFF" stroke="#000000" stroke-linecap="round"
+       stroke-width="1.5">
+        <path d="M10,0 C8.15833333,0 6.66666667,1.50129032 6.66666667,3.35483871 C6.66666667,4.10129032 6.90833333,4.78903226 7.31666667,5.35096774 C5.69166667,6.29032258 4.58333333,8.04322581 4.58333333,10.0645161 C4.58333333,11.7670968 5.36666667,13.2851613 6.59166667,14.2832258 C4.09166667,15.1722581 0.416666667,18.9380645 0.416666667,25.5806452 L19.5833333,25.5806452 C19.5833333,18.9380645 15.9083333,15.1722581 13.4083333,14.2832258 C14.6333333,13.2851613 15.4166667,11.7670968 15.4166667,10.0645161 C15.4166667,8.04322581 14.3083333,6.29032258 12.6833333,5.35096774 C13.0916667,4.78903226 13.3333333,4.10129032 13.3333333,3.35483871 C13.3333333,1.50129032 11.8416667,0 10,0 Z"/>
+    </g>
+    <g id="pc-bk" stroke-linecap="round" stroke-linejoin="round" transform="translate(5.000000, 5.000000)"
+       stroke-width="1.5">
+        <line x1="15" y1="4.96764706" x2="15" y2="0" stroke="#000000"/>
+        <path d="M15,16.7647059 C15,16.7647059 18.8571429,10.1470588 17.5714286,7.5 C17.5714286,7.5 16.7142857,5.29411765 15,5.29411765 C13.2857143,5.29411765 12.4285714,7.5 12.4285714,7.5 C11.1428571,10.1470588 15,16.7647059 15,16.7647059" stroke="#000000" fill="#000000"/>
+        <path d="M5.57142857,27.3529412 C10.2857143,30.4411765 18.8571429,30.4411765 23.5714286,27.3529412 L23.5714286,21.1764706 C23.5714286,21.1764706 31.2857143,17.2058824 28.7142857,11.9117647 C25.2857143,6.17647059 17.1428571,8.82352941 15,15.4411765 L15,18.5294118 L15,15.4411765 C12,8.82352941 3.85714286,6.17647059 1.28571429,11.9117647 C-1.28571429,17.2058824 5.57142857,20.7352941 5.57142857,20.7352941 L5.57142857,27.3529412 Z" stroke="#000000" fill="#000000"/>
+        <line x1="12.8571429" y1="1.76470588" x2="17.1428571" y2="1.76470588" stroke="#000000"/>
+        <path d="M23.1428571,20.7352941 C23.1428571,20.7352941 30.4285714,17.2058824 28.3114286,12.2205882 C24.9857143,7.05882353 17.1428571,10.5882353 15,16.3235294 L15.0085714,18.1764706 L15,16.3235294 C12.8571429,10.5882353 4.20514286,7.05882353 1.71171429,12.2205882 C-0.428571429,17.2058824 5.87142857,20.1617647 5.87142857,20.1617647" stroke="#FFFFFF" fill="none"/>
+        <path d="M5.57142857,21.1764706 C10.2857143,18.5294118 18.8571429,18.5294118 23.5714286,21.1764706 M5.57142857,24.2647059 C10.2857143,21.6176471 18.8571429,21.6176471 23.5714286,24.2647059 M5.57142857,27.3529412 C10.2857143,24.7058824 18.8571429,24.7058824 23.5714286,27.3529412" stroke="#FFFFFF" fill="none"/>
+    </g>
+    <g id="pc-bq" stroke-linecap="round" stroke-linejoin="round" transform="translate(3.000000, 4.000000)">
+        <g fill="#000000">
+            <ellipse cx="2.61538462" cy="6.22222222" rx="2.3974359" ry="2.44444444"/>
+            <ellipse cx="9.58974359" cy="3.55555556" rx="2.3974359" ry="2.44444444"/>
+            <ellipse cx="17" cy="2.66666667" rx="2.3974359" ry="2.44444444"/>
+            <ellipse cx="24.4102564" cy="3.55555556" rx="2.3974359" ry="2.44444444"/>
+            <ellipse cx="31.3846154" cy="6.22222222" rx="2.3974359" ry="2.44444444"/>
+        </g>
+        <path d="M5.23076923,18.6666667 C12.6410256,17.3333333 23.5384615,17.3333333 28.7692308,18.6666667 L30.9487179,7.55555556 L24.4102564,17.7777778 L24.1487179,5.24444444 L19.6153846,17.3333333 L17,4.44444444 L14.3846154,17.3333333 L9.85128205,5.24444444 L9.58974359,17.7777778 L3.05128205,7.55555556 L5.23076923,18.6666667 Z"
+              id="crown" stroke="#000000" stroke-width="1.5" fill="#000000"/>
+        <path d="M5.23076923,18.6666667 C5.23076923,20.4444444 6.53846154,20.4444444 7.41025641,22.2222222 C8.28205128,23.5555556 8.28205128,23.1111111 7.84615385,25.3333333 C6.53846154,26.2222222 6.53846154,27.5555556 6.53846154,27.5555556 C5.23076923,28.8888889 6.97435897,29.7777778 6.97435897,29.7777778 C12.6410256,30.6666667 21.3589744,30.6666667 27.025641,29.7777778 C27.025641,29.7777778 28.3333333,28.8888889 27.025641,27.5555556 C27.025641,27.5555556 27.4615385,26.2222222 26.1538462,25.3333333 C25.7179487,23.1111111 25.7179487,23.5555556 26.5897436,22.2222222 C27.4615385,20.4444444 28.7692308,20.4444444 28.7692308,18.6666667 C21.3589744,17.3333333 12.6410256,17.3333333 5.23076923,18.6666667 Z" stroke="#000000" stroke-width="1.5" fill="#000000"/>
+        <path d="M6.97435897,29.7777778 C13.4672777,32.080866 20.5327223,32.080866 27.025641,29.7777778"
+              stroke="#000000" stroke-width="1.5"/>
+        <path d="M6.97435897,21.3333333 C13.4672777,19.0302452 20.5327223,19.0302452 27.025641,21.3333333"
+              stroke="#FFFFFF" stroke-width="1.5"/>
+        <line x1="8.28205128" y1="23.5555556" x2="25.7179487" y2="23.5555556" stroke="#FFFFFF"
+              stroke-width="1.5"/>
+        <path d="M7.41025641,26.2222222 C13.6372326,28.3241535 20.3627674,28.3241535 26.5897436,26.2222222"
+              stroke="#FFFFFF" stroke-width="1.5"/>
+        <path d="M6.53846154,28.8888889 C13.2948481,31.4031829 20.7051519,31.4031829 27.4615385,28.8888889"
+              stroke="#FFFFFF" stroke-width="1.5"/>
+    </g>
+    <g id="pc-bb" stroke-linecap="round" stroke-linejoin="round" transform="translate(6.000000, 5.000000)"
+       stroke-width="1.5">
+        <g fill="#000000" stroke="#000000">
+            <path d="M2.54545455,27.3529412 C5.42181818,26.4970588 11.1236364,27.7323529 14,25.5882353 C16.8763636,27.7323529 22.5781818,26.4970588 25.4545455,27.3529412 C25.4545455,27.3529412 26.8545455,27.8294118 28,29.1176471 C27.4230303,29.9735294 26.6,29.9911765 25.4545455,29.5588235 C22.5781818,28.7029412 16.8763636,29.9647059 14,28.6764706 C11.1236364,29.9647059 5.42181818,28.7029412 2.54545455,29.5588235 C1.39660606,29.9911765 0.574424242,29.9735294 0,29.1176471 C1.14884848,27.4058824 2.54545455,27.3529412 2.54545455,27.3529412 Z"/>
+            <path d="M7.63636364,23.8235294 C9.75757576,26.0294118 18.2424242,26.0294118 20.3636364,23.8235294 C20.7878788,22.5 20.3636364,22.0588235 20.3636364,22.0588235 C20.3636364,19.8529412 18.2424242,18.5294118 18.2424242,18.5294118 C22.9090909,17.2058824 23.3333333,8.38235294 14,4.85294118 C4.66666667,8.38235294 5.09090909,17.2058824 9.75757576,18.5294118 C9.75757576,18.5294118 7.63636364,19.8529412 7.63636364,22.0588235 C7.63636364,22.0588235 7.21212121,22.5 7.63636364,23.8235294 Z"/>
+            <path d="M16.1212121,2.64705882 C16.1212121,3.86533401 15.1715131,4.85294118 14,4.85294118 C12.8284869,4.85294118 11.8787879,3.86533401 11.8787879,2.64705882 C11.8787879,1.42878364 12.8284869,0.441176471 14,0.441176471 C15.1715131,0.441176471 16.1212121,1.42878364 16.1212121,2.64705882 Z"/>
+        </g>
+        <path d="M9.75757576,18.5294118 L18.2424242,18.5294118 M7.63636364,22.0588235 L20.3636364,22.0588235 M14,9.26470588 L14,13.6764706 M11.8787879,11.4705882 L16.1212121,11.4705882" stroke="#FFFFFF"/>
+    </g>
+    <g id="pc-bn" stroke-linecap="round" stroke-linejoin="round" transform="translate(6.000000, 6.000000)">
+        <path d="M13.5757576,2.63636364 C22.4848485,3.51515152 27.5757576,9.66666667 27.1515152,28.1212121 L7.63636364,28.1212121 C7.63636364,20.2121212 16.1212121,22.4090909 14.4242424,9.66666667" stroke="#000000" stroke-width="1.5" fill="#000000"/>
+        <path d="M15.2727273,9.66666667 C15.5951515,12.2239394 10.5636364,16.1433333 8.48484848,17.5757576 C5.93939394,19.3333333 6.09212121,21.389697 4.24242424,21.0909091 C3.35830303,20.2648485 5.43878788,18.4193939 4.24242424,18.4545455 C3.39393939,18.4545455 4.40363636,19.5354545 3.39393939,20.2121212 C2.54545455,20.2121212 -0.00254545455,21.0909091 -1.90580876e-06,16.6969697 C-1.90580876e-06,14.9393939 5.09090909,6.15151515 5.09090909,6.15151515 C5.09090909,6.15151515 6.69454545,4.48181818 6.78787879,3.07575758 C6.16848485,2.20224242 6.36363636,1.31818182 6.36363636,0.439393939 C7.21212121,-0.439393939 8.90909091,2.63636364 8.90909091,2.63636364 L10.6060606,2.63636364 C10.6060606,2.63636364 11.2678788,0.885818182 12.7272727,0 C13.5757576,0 13.5757576,2.63636364 13.5757576,2.63636364" stroke="#000000" stroke-width="1.5" fill="#000000"/>
+        <path d="M2.96969697,16.2575758 C2.96969697,16.5002463 2.77975717,16.6969697 2.54545455,16.6969697 C2.31115192,16.6969697 2.12121212,16.5002463 2.12121212,16.2575758 C2.12121212,16.0149052 2.31115192,15.8181818 2.54545455,15.8181818 C2.77975717,15.8181818 2.96969697,16.0149052 2.96969697,16.2575758 Z" stroke="#FFFFFF" stroke-width="1.5" fill="#FFFFFF"/>
+        <path d="M7.6363543,7.46969697 C7.6363543,8.19769267 7.44641868,8.78784979 7.21212121,8.78784979 C6.97782375,8.78784979 6.78788812,8.19769267 6.78788812,7.46969697 C6.78788812,6.74170127 6.97782375,6.15154415 7.21212121,6.15154415 C7.44641868,6.15154415 7.6363543,6.74170127 7.6363543,7.46969697 L7.6363543,7.46969697 Z" stroke="#FFFFFF" stroke-width="1.499967" fill="#FFFFFF"
+              transform="translate(7.212121, 7.469697) rotate(30.000728) translate(-7.212121, -7.469697) "/>
+        <path d="M15.7393939,2.98787879 L15.3575758,4.26212121 L15.7818182,4.39393939 C18.4545455,5.27272727 20.5757576,6.58212121 22.4848485,10.3257576 C24.3939394,14.0693939 25.2424242,19.3860606 24.8181818,28.1212121 L24.7757576,28.5606061 L26.6848485,28.5606061 L26.7272727,28.1212121 C27.1515152,19.2806061 25.9806061,13.3136364 23.969697,9.36787879 C21.9587879,5.42212121 19.0569697,3.53272727 16.1721212,3.07575758 L15.7393939,2.98787879 Z" fill="#FFFFFF"/>
+    </g>
+    <g id="pc-br" stroke-linecap="round" stroke-linejoin="round" transform="translate(9.000000, 8.000000)">
+        <polygon stroke="#000000" stroke-width="1.5" fill="#000000" points="0 26 22 26 22 23.4 0 23.4"/>
+        <polygon stroke="#000000" stroke-width="1.5" fill="#000000"
+                 points="2.85185185 19.9333333 4.07407407 17.7666667 17.9259259 17.7666667 19.1481481 19.9333333"/>
+        <polygon stroke="#000000" stroke-width="1.5" fill="#000000"
+                 points="2.44444444 23.4 2.44444444 19.9333333 19.5555556 19.9333333 19.5555556 23.4"/>
+        <polygon stroke="#000000" stroke-width="1.5" fill="#000000"
+                 points="4.07407407 17.7666667 4.07407407 6.5 17.9259259 6.5 17.9259259 17.7666667"/>
+        <polygon stroke="#000000" stroke-width="1.5" fill="#000000"
+                 points="4.07407407 6.5 1.62962963 4.33333333 20.3703704 4.33333333 17.9259259 6.5"/>
+        <polygon stroke="#000000" stroke-width="1.5" fill="#000000"
+                 points="1.62962963 4.33333333 1.62962963 0 4.88888889 0 4.88888889 1.73333333 8.96296296 1.73333333 8.96296296 0 13.037037 0 13.037037 1.73333333 17.1111111 1.73333333 17.1111111 0 20.3703704 0 20.3703704 4.33333333"/>
+        <polyline stroke="#FFFFFF"
+                  points="2.44444444 22.9666667 19.5555556 22.9666667 19.5555556 22.9666667"/>
+        <line x1="3.25925926" y1="19.5" x2="18.7407407" y2="19.5" stroke="#FFFFFF"/>
+        <line x1="4.07407407" y1="17.7666667" x2="17.9259259" y2="17.7666667" stroke="#FFFFFF"/>
+        <line x1="4.07407407" y1="6.5" x2="17.9259259" y2="6.5" stroke="#FFFFFF"/>
+        <line x1="1.62962963" y1="4.33333333" x2="20.3703704" y2="4.33333333" stroke="#FFFFFF"/>
+    </g>
+    <g id="pc-bp" transform="translate(10.000000, 8.000000)" fill="#000000" stroke="#000000" stroke-linecap="round"
+       stroke-width="1.5">
+        <path d="M10,0 C8.15833333,0 6.66666667,1.50129032 6.66666667,3.35483871 C6.66666667,4.10129032 6.90833333,4.78903226 7.31666667,5.35096774 C5.69166667,6.29032258 4.58333333,8.04322581 4.58333333,10.0645161 C4.58333333,11.7670968 5.36666667,13.2851613 6.59166667,14.2832258 C4.09166667,15.1722581 0.416666667,18.9380645 0.416666667,25.5806452 L19.5833333,25.5806452 C19.5833333,18.9380645 15.9083333,15.1722581 13.4083333,14.2832258 C14.6333333,13.2851613 15.4166667,11.7670968 15.4166667,10.0645161 C15.4166667,8.04322581 14.3083333,6.29032258 12.6833333,5.35096774 C13.0916667,4.78903226 13.3333333,4.10129032 13.3333333,3.35483871 C13.3333333,1.50129032 11.8416667,0 10,0 Z"/>
+    </g>
+</defs></svg><div class="wrap">
+  <header><h1>Дебютный справочник</h1><span class="sub" id="subT">76 репертуаров из студий diaschess88 · только ходы</span></header>
+  <div class="main">
+    <section class="left" aria-label="Доска и ходы">
+      <div class="opening" id="opening">&nbsp;</div>
+      <div class="board" id="board" role="grid" aria-label="Шахматная доска"></div>
+      <div class="ctrls nav">
+        <button id="bStart" type="button" title="В начало (Home)" aria-label="В начало">⏮</button>
+        <button id="bBack" type="button" title="Назад (←)">◀ Назад</button>
+        <button id="bFwd" type="button" title="Вперёд (→)">Вперёд ▶</button>
+        <button id="bFlip" type="button" title="Перевернуть доску (F)" aria-label="Перевернуть доску">⇅</button>
+      </div>
+      <div class="lbl" id="movesLbl">Ходы в позиции</div>
+      <div class="moves" id="moves"></div>
+    </section>
+    <section class="right" aria-label="Вариант, фильтры и студии">
+      <div class="path" id="path" aria-label="Сыгранные ходы"></div>
+      <div class="copybox">
+        <label class="lbl" for="pgnTxt">Ходы варианта</label>
+        <textarea id="pgnTxt" readonly rows="2" placeholder="Сделайте ходы, и они появятся здесь"></textarea>
+        <div class="ctrls"><button id="bCopyMoves" type="button">Копировать ходы</button><button id="bCopy" type="button">Копировать ссылку</button></div>
+        <p class="note" id="copyMsg" hidden></p>
+      </div>
+      <div class="lbl">Какие репертуары показывать</div>
+      <div class="filters">
+        <div class="seg" role="group" aria-label="Чей репертуар">
+          <button type="button" data-side="a" aria-pressed="true">Все</button>
+          <button type="button" data-side="w" aria-pressed="false">За белых</button>
+          <button type="button" data-side="b" aria-pressed="false">За чёрных</button>
+        </div>
+        <select id="repSel" aria-label="Один репертуар"></select>
+      </div>
+      <div class="lbl" id="repsLbl">Открыть в студии на этом месте</div>
+      <div class="reps" id="reps"></div>
+      <div class="ctrls">
+        <a class="btn" id="bLichess" href="https://lichess.org/analysis" target="_blank" rel="noopener">Анализ на Lichess ↗</a>
+        <button id="bSnd" type="button" aria-pressed="false">🔊 Звук: вкл</button>
+      </div>
+      <p class="note">Нажмите на ход в таблице под доской или сделайте его на доске. Число показывает, в скольких репертуарах есть этот ход; полоса — его доля. Выберите один репертуар, чтобы пройти только его варианты: ходы стороны, за которую он составлен, отмечены «по репертуару». Ссылка на студию открывает главу на этой позиции; если позиция в побочном варианте, откроется ближайший ход главной линии. Студии закрытые: они открываются, только если вы вошли в Lichess как diaschess88.</p>
+    </section>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const FILES='abcdefgh';
+let META=null; const POS={}; const LOADP={}; const LOADED={};
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+function key(fen){return fen.split(' ').slice(0,3).join(' ');}
+function loadFile(u){ if(LOADED[u]) return Promise.resolve(); if(!LOADP[u]) LOADP[u]=fetch(u).then(r=>{if(!r.ok) throw new Error(r.status); return r.json();}).then(j=>{ Object.assign(POS,j); LOADED[u]=1; }).catch(e=>{delete LOADP[u]; throw e;}); return LOADP[u]; }
+async function entryAt(n){ await loadFile('core.json'); const g=new Chess(); let prev=null;
+  for(let i=0;i<=n;i++){ if(i>0){ const mv=hist[i-1]; prev=POS[key(g.fen())]; g.move(mv.san); }
+    const k=key(g.fen()); if(POS[k]) continue; if(!prev) return [];
+    const e=prev.find(x=>x[0]===hist[i-1].san); if(!e) return [];
+    const rs=e[1].slice().sort((a,b)=>(LOADED['r/'+b+'.json']?1:0)-(LOADED['r/'+a+'.json']?1:0));
+    for(const r of rs.slice(0,3)){ await loadFile('r/'+r+'.json'); if(POS[k]) break; }
+    if(!POS[k]) return []; }
+  return POS[key(g.fen())]||[]; }
+function prefetch(){ for(const x of cur.slice(0,2)){ const m=game.move(x.san); if(!m) continue; const k=key(game.fen()); game.undo(); if(!POS[k]&&LOADED['core.json']){ const rs=x.rs; if(!rs.some(r=>LOADED['r/'+r+'.json'])) loadFile('r/'+rs[0]+'.json').catch(()=>{}); } } }
+
+let game=new Chess(); let hist=[]; let fwd=[]; let orient='w'; let side=store.get('dt_side')||'a'; let rep=-1;
+let sel=null, legal=[], cur=[];
+const sqs={}; const boardEl=$('board');
+function buildBoard(){ boardEl.innerHTML=''; for(let r=0;r<8;r++)for(let f=0;f<8;f++){ const file=orient==='w'?f:7-f, rank=orient==='w'?7-r:r; const name=FILES[file]+(rank+1);
+  const d=document.createElement('div'); d.className='sq '+(((file+rank)%2)?'l':'d'); d.dataset.sq=name; d.setAttribute('role','gridcell'); d.setAttribute('aria-label',name);
+  if(r===7){const c=document.createElement('span');c.className='coord f';c.textContent=FILES[file];d.appendChild(c)}
+  if(f===0){const c=document.createElement('span');c.className='coord r';c.textContent=rank+1;d.appendChild(c)}
+  boardEl.appendChild(d); sqs[name]=d; } }
+function drawBoard(){ const last=hist.length?hist[hist.length-1]:null; const repTo=new Set();
+  for(const m of cur){ if(!m.show) continue; const mv=m.mv; if(mv) repTo.add(mv.from) }
+  for(const name in sqs){ const d=sqs[name]; const p=game.get(name); let pc=d.querySelector('.pc'); if(pc) pc.remove();
+    if(p){pc=document.createElementNS('http://www.w3.org/2000/svg','svg');pc.setAttribute('class','pc');pc.setAttribute('viewBox','0 0 40 40');const u=document.createElementNS('http://www.w3.org/2000/svg','use');u.setAttribute('href','#pc-'+p.color+p.type);pc.appendChild(u);d.appendChild(pc)}
+    d.classList.toggle('last',!!last&&(last.from===name||last.to===name));
+    d.classList.toggle('sel',sel===name);
+    const t=legal.find(m=>m.to===name); d.classList.toggle('tgt',!!t); d.classList.toggle('cap',!!t&&!!p);
+  } }
+function tryMove(to){ const t=legal.filter(m=>m.to===to); if(!t.length) return false; const pick=t.find(m=>!m.promotion||m.promotion==='q')||t[0]; sel=null; legal=[]; play(pick.san); return true; }
+function sqAt(x,y){ const el=document.elementFromPoint(x,y); const q=el&&el.closest&&el.closest('.sq'); return q?q.dataset.sq:null; }
+let drag=null;
+boardEl.addEventListener('pointerdown',e=>{ if(e.button>0) return; const sq=e.target.closest('.sq'); if(!sq) return; const name=sq.dataset.sq;
+  if(sel&&sel!==name&&tryMove(name)){ e.preventDefault(); return; }
+  const p=game.get(name);
+  if(!p||p.color!==game.turn()){ sel=null; legal=[]; drawBoard(); return; }
+  const wasSel=sel===name; sel=name; legal=game.moves({square:name,verbose:true}); drawBoard();
+  const pc=sqs[name].querySelector('.pc'); const r=sqs[name].getBoundingClientRect();
+  const g=pc.cloneNode(true); g.classList.add('ghost'); g.style.width=r.width+'px'; g.style.height=r.height+'px'; g.style.left=e.clientX+'px'; g.style.top=e.clientY+'px'; g.style.display='none'; document.body.appendChild(g);
+  drag={from:name,g,pc,x:e.clientX,y:e.clientY,moved:false,wasSel,id:e.pointerId}; try{boardEl.setPointerCapture(e.pointerId)}catch(_){} e.preventDefault(); });
+boardEl.addEventListener('pointermove',e=>{ if(!drag||e.pointerId!==drag.id) return; if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<5) return;
+  if(!drag.moved){ drag.moved=true; drag.g.style.display='block'; drag.pc.style.opacity='.3'; }
+  drag.g.style.left=e.clientX+'px'; drag.g.style.top=e.clientY+'px'; });
+function endDrag(e,cancel){ if(!drag||(e&&e.pointerId!==drag.id)) return; const d=drag; drag=null; d.g.remove(); d.pc.style.opacity='';
+  if(cancel) { drawBoard(); return; }
+  if(d.moved){ const to=sqAt(e.clientX,e.clientY); if(to&&to!==d.from&&tryMove(to)) return; drawBoard(); return; }
+  if(d.wasSel){ sel=null; legal=[]; drawBoard(); } }
+boardEl.addEventListener('pointerup',e=>endDrag(e,false));
+boardEl.addEventListener('pointercancel',e=>endDrag(e,true));
+let AC=null, muted=store.get('dt_mute')==='1';
+function ac(){ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){AC=null} } if(AC&&AC.state==='suspended') AC.resume().catch(()=>{}); return AC; }
+function knock(vol,freq,dur){ const a=ac(); if(!a) return; const t=a.currentTime, n=Math.floor(a.sampleRate*dur), buf=a.createBuffer(1,n,a.sampleRate), ch=buf.getChannelData(0);
+  for(let i=0;i<n;i++) ch[i]=(Math.random()*2-1)*Math.pow(1-i/n,4);
+  const src=a.createBufferSource(); src.buffer=buf; const bp=a.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=freq; bp.Q.value=1.2; const g=a.createGain(); g.gain.value=vol; src.connect(bp); bp.connect(g); g.connect(a.destination); src.start(t); }
+function tone(f,dur,vol){ const a=ac(); if(!a) return; const t=a.currentTime, o=a.createOscillator(), g=a.createGain(); o.type='triangle'; o.frequency.value=f; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.008); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+dur+0.02); }
+function sound(m){ if(muted) return; if(m.captured){ knock(2.4,800,.11); tone(150,.09,.12); } else { knock(1.6,1400,.07); tone(220,.06,.08); } if(m.san.includes('+')) tone(660,.12,.08); }
+function syncSnd(){ const b=$('bSnd'); b.textContent=muted?'🔇 Звук: выкл':'🔊 Звук: вкл'; b.setAttribute('aria-pressed',String(muted)); }
+$('bSnd').onclick=()=>{ muted=!muted; store.set('dt_mute',muted?'1':'0'); syncSnd(); if(!muted) sound({san:'e4'}); }; syncSnd();
+function repOk(i){ if(rep>=0) return i===rep; if(side==='a') return true; return META.reps[i].side===side; }
+function play(san,keepFwd){ const m=game.move(san); if(!m) return; sound(m); hist.push(m); if(!keepFwd) fwd=[]; refresh(); }
+function back(){ if(!hist.length) return; const m=game.undo(); hist.pop(); fwd.push(m.san); refresh(); }
+function forward(){ if(!fwd.length) return; play(fwd.pop(),true); }
+function toStart(){ while(hist.length){ const m=game.undo(); hist.pop(); fwd.push(m.san);} refresh(); }
+function goto(n){ while(hist.length>n) back(); }
+let lastName=null;
+function openingName(){ let nm=null; const g=new Chess(); if(META.names[key(g.fen())]) nm=META.names[key(g.fen())]; for(const m of hist){ g.move(m.san); const x=META.names[key(g.fen())]; if(x&&!(nm&&nm.slice(4).startsWith(x.slice(4)))) nm=x; } return nm; }
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function studyUrl(i,code,n){ const r=META.reps[i]; if(!r.study) return null; let u='https://lichess.org/study/'+r.study; if(code!==undefined&&r.chs){ const ci=Math.floor(code/1000), ply=Math.min(code%1000,n); if(r.chs[ci]) u+='/'+r.chs[ci]+(ply>0?'#'+ply:''); } return u; }
+function setHash(){ const h=hist.map(m=>m.from+m.to+(m.promotion||'')).join('-'); try{ history.replaceState(null,'',h?'#'+h:location.pathname+location.search); }catch(e){ location.hash=h; } }
+async function refresh(){
+  sel=null; legal=[];
+  // path
+  const P=$('path'); let html=''; hist.forEach((m,i)=>{ if(i%2===0) html+=`<span class="mn">${i/2+1}.</span>`; else if(i===0) html+=`<span class="mn">1…</span>`; html+=`<a data-i="${i+1}" class="${i===hist.length-1?'cur':''}">${esc(m.san)}</a> `; });
+  P.innerHTML=html||'<span class="mn">Начальная позиция. Сделайте первый ход.</span>';
+  P.querySelectorAll('a').forEach(a=>a.onclick=()=>goto(+a.dataset.i));
+  const nm=openingName(); if(nm){ const sp=nm.indexOf(' '); $('opening').innerHTML=`<span class="eco">${esc(nm.slice(0,sp))}</span>${esc(nm.slice(sp+1))}`; } else $('opening').innerHTML='&nbsp;';
+  $('bLichess').href='https://lichess.org/analysis/standard/'+game.fen().replace(/ /g,'_');
+  $('bBack').disabled=!hist.length; $('bStart').disabled=!hist.length; $('bFwd').disabled=!fwd.length;
+  setHash();
+  $('pgnTxt').value=pgnText();
+  const fen=game.fen(); const box=$('moves'); box.classList.add('loading');
+  let raw; try{ raw=await entryAt(hist.length); }catch(e){ box.classList.remove('loading'); box.innerHTML='<div class="empty">Не удалось загрузить данные. Проверьте интернет и обновите страницу.</div>'; return; }
+  if(game.fen()!==fen) return;
+  box.classList.remove('loading');
+  const CODE={}; raw.forEach(([san,rs,cs])=>rs.forEach((r,j)=>{ if(CODE[r]===undefined&&cs) CODE[r]=cs[j]; }));
+  cur=raw.map(([san,rs])=>{ const f=rs.filter(repOk); return {san,rs,f,show:f.length>0,mv:null}; }).filter(x=>x.show);
+  const tot=new Set(); cur.forEach(x=>x.f.forEach(i=>tot.add(i)));
+  cur.sort((a,b)=>b.f.length-a.f.length);
+  const turn=game.turn();
+  $('movesLbl').textContent=(turn==='w'?'Ход белых':'Ход чёрных')+' · '+(cur.length?cur.length+' '+plural(cur.length,'ход','хода','ходов'):'ходов нет');
+  if(!cur.length){ const any=raw.length; box.innerHTML=`<div class="empty">${hist.length&&!any?'Здесь вариант в справочнике заканчивается.':'В выбранных репертуарах этой позиции нет.'} Можно вернуться назад или посмотреть позицию в анализе Lichess.</div>`; }
+  else { const mx=Math.max(...cur.map(x=>x.f.length));
+    box.innerHTML=cur.map((x,k)=>{ const mine=rep>=0&&META.reps[rep].side===turn; const names=x.f.slice(0,3).map(i=>`<span class="chip ${META.reps[i].side}" title="${esc(META.reps[i].name)} — за ${META.reps[i].side==='w'?'белых':'чёрных'}"><span class="side-dot" style="background:var(--${META.reps[i].side==='w'?'wside':'bside'})"></span>${esc(META.reps[i].name)}</span>`).join('')+(x.f.length>3?`<span class="chip">ещё ${x.f.length-3}</span>`:'');
+      return `<button type="button" class="mv${mine?' mine':''}" data-k="${k}"><span class="san">${moveNo()}${esc(x.san)}</span><span class="cnt">${x.f.length} ${plural(x.f.length,'репертуар','репертуара','репертуаров')}<span class="barw"><span class="bar" style="display:block;width:${Math.round(100*x.f.length/mx)}%"></span></span></span><span class="who">${names}</span></button>`; }).join('');
+    box.querySelectorAll('.mv').forEach(b=>b.onclick=()=>play(cur[+b.dataset.k].san)); }
+  // studies with this position: reps of outgoing moves, or of the move that led here
+  let rs=[...tot]; if(!rs.length&&hist.length){ /* leaf: reps of previous move */ try{ const pm=await entryAt(hist.length-1); const e=pm.find(x=>x[0]===hist[hist.length-1].san); if(e){ rs=e[1].filter(repOk); e[1].forEach((r,j)=>{ if(e[2]) CODE[r]=e[2][j]; }); } }catch(e){} }
+  if(game.fen()!==fen) return;
+  $('repsLbl').textContent='Открыть в студии на этом месте · '+rs.length;
+  $('reps').innerHTML=rs.sort((a,b)=>META.reps[a].name.localeCompare(META.reps[b].name,'ru')).map(i=>{ const u=studyUrl(i,CODE[i],hist.length); return `<a href="${u||'#'}" target="_blank" rel="noopener"><span class="side-dot" style="background:var(--${META.reps[i].side==='w'?'wside':'bside'})"></span>${esc(META.reps[i].name)}</a>`; }).join('');
+  drawBoard();
+  // prefetch shards of next positions
+  prefetch();
+}
+function pgnText(){ return hist.map((m,i)=>(i%2===0?(i/2+1)+'. ':'')+m.san).join(' '); }
+function copyText(t,okMsg){ const msg=$('copyMsg'); const done=x=>{msg.hidden=false;msg.textContent=x;}; const ta=$('pgnTxt');
+  const manual=()=>{ if(t===ta.value){ ta.focus(); ta.select(); done('Текст выделен в окне: скопируйте его вручную.'); } else done('Скопируйте вручную: '+t); };
+  try{ navigator.clipboard.writeText(t).then(()=>done(okMsg),manual); }catch(e){ manual(); } }
+function moveNo(){ const n=Math.floor(hist.length/2)+1; return game.turn()==='w'?n+'. ':n+'… '; }
+function plural(n,a,b,c){ const m=n%10,h=n%100; if(m===1&&h!==11) return a; if(m>=2&&m<=4&&(h<12||h>14)) return b; return c; }
+function setSide(s){ side=s; rep=-1; $('repSel').value='-1'; store.set('dt_side',s); document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.side===s))); refresh(); }
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>setSide(b.dataset.side));
+$('repSel').onchange=()=>{ rep=+$('repSel').value; if(rep>=0){ document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed','false')); const s=META.reps[rep].side; if(s!==orient){ orient=s; buildBoard(); } } else setSide(side); refresh(); };
+$('bBack').onclick=back; $('bFwd').onclick=forward; $('bStart').onclick=toStart;
+$('bFlip').onclick=()=>{ orient=orient==='w'?'b':'w'; buildBoard(); drawBoard(); };
+$('bCopyMoves').onclick=()=>{ const t=pgnText(); if(!t){ $('copyMsg').hidden=false; $('copyMsg').textContent='Сначала сделайте ходы.'; return; } copyText(t,'Ходы скопированы: '+t); };
+$('pgnTxt').addEventListener('focus',e=>e.target.select());
+$('bCopy').onclick=()=>{ const u=location.href; const msg=$('copyMsg'); const done=t=>{msg.hidden=false;msg.textContent=t;};
+  try{ navigator.clipboard.writeText(u).then(()=>done('Ссылка скопирована. Отправьте её ученику: откроется этот же вариант.'),()=>done('Скопируйте ссылку: '+u)); }catch(e){ done('Скопируйте ссылку: '+u); } };
+document.addEventListener('keydown',e=>{ if(e.target.closest('select,input,textarea')) return; if(e.key==='ArrowLeft'){back();e.preventDefault()} else if(e.key==='ArrowRight'){forward();e.preventDefault()} else if(e.key==='Home'){toStart()} else if(e.key==='f'||e.key==='F'){$('bFlip').click()} });
+function fromHash(){ const h=(location.hash||'').slice(1); if(!/^[a-h][1-8][a-h][1-8][qrbn]?(-[a-h][1-8][a-h][1-8][qrbn]?)*$/.test(h)) return; for(const u of h.split('-')){ const m=game.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'}); if(!m) break; hist.push(m); } }
+window.addEventListener('hashchange',()=>{ const h=(location.hash||'').slice(1); const curH=hist.map(m=>m.from+m.to+(m.promotion||'')).join('-'); if(h===curH) return; game=new Chess(); hist=[]; fwd=[]; fromHash(); refresh(); });
+(async()=>{
+  buildBoard(); drawBoard();
+  try{ META=await fetch('meta.json').then(r=>r.json()); }catch(e){ $('moves').innerHTML='<div class="empty">Не удалось загрузить справочник. Обновите страницу.</div>'; return; }
+  const S=$('repSel'); const og=(lab,s)=>`<optgroup label="${lab}">`+META.reps.map((r,i)=>[r,i]).filter(([r])=>r.side===s).sort((a,b)=>a[0].name.localeCompare(b[0].name,'ru')).map(([r,i])=>`<option value="${i}">${esc(r.name)} · ${r.ch} гл.</option>`).join('')+'</optgroup>';
+  S.innerHTML='<option value="-1">Один репертуар: не выбран</option>'+og('За белых','w')+og('За чёрных','b');
+  $('subT').textContent=`${META.reps.length} репертуаров из студий diaschess88 · ${META.reps.reduce((a,r)=>a+r.ch,0)} глав · только ходы`;
+  document.querySelectorAll('.seg button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.side===side)));
+  fromHash(); refresh();
+})();
+</script>

@@ -1,0 +1,6 @@
+[Event "Алапин 3.c3 d5"]
+[White "Алапин 3.c3 d5"]
+[Result "*"]
+[Annotator "Диас"]
+
+1. e4 c5 2. Nf3 Nc6 3. c3 d5 4. exd5 Qxd5 5. d4 Bg4 6. Be2 (6. dxc5 Qxd1+ (6... Qxc5 7. Be3 (7. h3) 7... Qa5 8. h3 Bh5 9. b4 Qc7 10. g4 Bg6 11. b5 Ne5 12. Nxe5 Qxe5 13. Bg2 Be4 14. Bxe4 Qxe4 15. O-O Nf6 16. Nd2 Qd3 17. Qa4 e6 18. Rad1 Be7 19. Nc4 Qe2 20. Ne5 O-O 21. Rd2) 7. Kxd1 O-O-O+ (7... e5 8. b4 a5 9. b5 Nd8 10. Be3 Rc8 11. c6 bxc6 12. b6 (12. h3 Bh5 13. g4 Bg6 14. Nxe5)) 8. Nd2 (8. Kc2 Bf5+ 9. Kb3 e5 10. Be3 Nf6 11. Nbd2 Nd7) (8. Bd2 e5 9. b4 Nf6 10. Kc1 e4 11. h3 Bf5 12. Nd4 Nxd4 13. cxd4 Rxd4 14. a3 g6 15. Bc3 Bh6+ 16. Kb2 Rhd8 17. Bxd4 Rxd4 18. g4 (18. Nc3 Rd2+ 19. Kb3 e3 20. fxe3 Bc2+ 21. Kc4 Bxe3 22. Ra2 Rd4+ 23. Kb5 Bb3 24. Rb2 Be6 25. Be2 Bf4 26. Ka4 Nd7 27. Rd1 Nxc5+ 28. Kb5 Bd6) 18... Be6 19. Be2 Nd5 20. Rd1 Rxd1 21. Bxd1 Bg7+) 8... Nf6 9. Be2 (9. h3 Bf5 10. b4 (10. Bb5 e5 11. b4 Ne4) 10... Ne4) 9... Bf5 10. b4 Ne4) 6... cxd4 (6... e6 7. h3 Bh5 8. c4 Qd7 9. d5 Bxf3 10. Bxf3 Nd4 11. O-O) 7. cxd4 e6 8. Nc3 Bb4 9. O-O Qa5 10. Bd2 (10. a3 Bxc3 11. bxc3 Nf6 (11... Qxc3 12. Bd2 Qb2 13. Rb1) 12. Qb3 O-O 13. Qxb7 (13. Be3 Nd5 14. Bd2 Bxf3 15. Bxf3 Nxd4 16. cxd4 Qxd2) 13... Rfc8 14. Bd2 Bxf3 15. Bxf3 Rab8) 10... Nf6 11. a3 Bxc3 12. Bxc3 (12. bxc3 Ne4 13. h3 Bh5) *
